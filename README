@@ -1,0 +1,14 @@
+Add your username password as stated in line 45 eg 
+parse [] = return ("satvikc","password")
+
+comment the line 
+-- parse _ = usage >> exit
+
+compile using 
+ghc firewallAuth.hs
+
+then simply run 
+./firewallAuth
+
+
+
