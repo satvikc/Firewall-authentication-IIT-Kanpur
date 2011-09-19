@@ -25,7 +25,7 @@ getKeepAlive    = matchRegex $ mkRegex "location.href=\"(.+?)\""
 
 getLogout = matchRegex $ mkRegex "href=\"(.+?logout.+?)\"" 
 
-keepAlive str logout = finally first after 
+keepAlive str logout = finally first after      --Logout if exit  
                     where 
                     first = do 
                                 putStrLn "Sending Request to keep Alive"
@@ -39,19 +39,13 @@ keepAlive str logout = finally first after
                                 else putStrLn "Cannot logout"
 
 usage   = putStrLn "Version 0.1 beta \nUsage: firewallAuth [-h] username password "
-userpass = do 
-            putStr "Username: "
-            username <- getLine
-            putStr "Password: "
-            password <- getLine
-            return (username,password)
 parse ["-h"] = usage   >> exit
-parse [] = userpass
 parse (a:b:_) = return (a,b)
-parse (a:[]) = do  
-            putStr "Password: "
-            password <- getLine
-            return (a,password)
+parse _ = usage >> exit
+--parse [] = return (username,password)
+--You can give your username and password above and then compile the
+--file then just use it . To do, uncomment the above line with your
+--username and password entered and comment the line above that 
 exit    = exitWith ExitSuccess
 die     = exitWith (ExitFailure 1)
 getAuthenticationInfo = getArgs >>= parse 
