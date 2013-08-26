@@ -10,5 +10,6 @@ ghc firewallAuth.hs
 then simply run 
 ./firewallAuth
 
-
+# TODO
+Replace obsolete http-enumerator package with http-conduit
 
