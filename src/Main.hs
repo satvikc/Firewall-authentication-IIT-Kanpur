@@ -44,7 +44,7 @@ keepAlive str logout = finally first after      --Logout if exit
                                 then putStrLn "Logged out successfully"
                                 else putStrLn "Cannot logout"
 
-usage   = putStrLn "Version 0.1 beta \nUsage: firewallAuth [-h] username password "
+usage   = putStrLn "Version 0.1 beta \nUsage: hwall-auth-iitk [-h] username password "
 parse ["-h"] = usage   >> exit
 parse (a:b:_) = return (a,b)
 parse _ = usage >> exit
