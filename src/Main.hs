@@ -1,4 +1,9 @@
-import Network.HTTP.Enumerator
+-- File: Main.hs
+-- Copyright rejuvyesh <mail@rejuvyesh.com>, 2013
+-- License: GNU GPL 3 <http://www.gnu.org/copyleft/gpl.html>
+
+import Network.HTTP.Conduit
+import Network.HTTP.Types (Status(..))
 import System.IO
 import System.Posix.Unistd (sleep)
 import Control.Concurrent (threadDelay)
@@ -11,13 +16,14 @@ import Control.Arrow
 import System.Environment
 import System.Exit
 import Control.Exception (finally)
+
 getResponse url = do
                     request <- parseUrl url 
                     withManager $ httpLbs request
 
 isLoggedIn = do 
             res <- getResponse "http://74.125.67.100:80" 
-            return $ if statusCode res /= 303 then Left True else Right res 
+            return $ if responseStatus res /= Status { statusCode = 303 } then Left True else Right res 
 
 getMagicString  = matchRegex $ mkRegex "VALUE=\"([0-9a-f]+)\""
 
@@ -52,7 +58,7 @@ getAuthenticationInfo = getArgs >>= parse
 alreadyLogged _ =  putStrLn "Already Logged in .. Trying after 60 seconds " >> threadDelay 60000000 >> firewallAuth 
 
 logOut url = do resp <- getResponse url
-                return (statusCode resp == 200)
+                return (responseStatus resp == Status { statusCode = 200} )
 
 tryToLog (username,password) res = do 
                     putStrLn $ "Hello " ++ username ++ "\nNow trying to login"
