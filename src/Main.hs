@@ -22,7 +22,7 @@ getResponse url = do
                     withManager $ httpLbs request
 
 isLoggedIn = do 
-            res <- getResponse "http://74.125.67.100:80" 
+            res <- getResponse "http://74.125.236.51:80" 
             return $ if responseStatus res /= Status { statusCode = 303 } then Left True else Right res 
 
 getMagicString  = matchRegex $ mkRegex "VALUE=\"([0-9a-f]+)\""
