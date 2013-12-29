@@ -1,15 +1,15 @@
 # IITK Authentication in Haskell
 
-Add your username password as stated in line 51 eg
+Add your username password as stated in line 65 eg
 ```haskell
 parse [] = return ("username","password")
 ```
 comment the line
 ```haskell
--- parse _ = usage >> exit
+-- parse _ = readInput
 ```
 
-compile using 
+Install using 
 ```sh
 cabal install
 ```
@@ -20,4 +20,8 @@ then simply run
 hwall-auth-iitk
 ```
 
+## Contributors
 
+[Satvik Chauhan](https://github.com/satvikc)
+
+[Jayesh Kumar Gupta](https://github.com/rejuvyesh)
