@@ -2,6 +2,7 @@ name:                hwall-auth-iitk
 version:             0.1.0.0
 -- synopsis:
 description:         Firewall Authentication script for IITK network in haskell.
+license:             BSD3
 license-file:        LICENSE
 author:              satvikc
 maintainer:          satvikc@iitk.ac.in
