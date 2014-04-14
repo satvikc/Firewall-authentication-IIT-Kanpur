@@ -110,7 +110,18 @@ firewallAuth auth = do
   putStrLn "Performing operation depending on current status."
   either (alreadyLogged auth) (tryToLog auth) loggedin
 
+
+retryIfFailed :: IO () -> IO ()
+retryIfFailed action = action `catch` with
+  where
+    with :: HttpException -> IO ()
+    with except = do
+      putStrLn $ "Exception: " ++ show except
+      putStrLn $ "Retrying in 30 seconds"
+      threadDelay 30000000   -- Wait 200 seconds
+      retryIfFailed action
+
 main :: IO ()
 main = do
   auth <- getAuthenticationInfo   -- Getting Username and password
-  firewallAuth auth
+  retryIfFailed (firewallAuth auth)
