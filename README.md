@@ -9,13 +9,13 @@ cabal install
 then simply run
 
 ```sh
-hwall-auth-iitk
+firewall-auth
 ```
 
 You can also supply username and password as command line arguments.
 
 ```sh
-hwall-auth-iitk "username" "password"
+firewall-auth "username" "password"
 ```
 
 
