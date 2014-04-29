@@ -13,7 +13,11 @@ import           System.Console.Haskeline
 import           System.Environment
 import           System.Exit
 import           Text.Regex
-
+import           System.Log.Logger
+import           System.Log.Handler.Syslog
+import           System.Log.Handler.Simple
+import           System.Log.Handler         (setFormatter)
+import           System.Log.Formatter
 
 getResponse :: String -> IO (Response ByteString)
 getResponse url = do
@@ -39,15 +43,15 @@ keepAlive :: String -> String -> IO ()
 keepAlive str logout = E.finally before after      --Logout if exit
   where
     before = do
-      putStrLn "Sending Request to keep Alive"
+      infoM "Firewall.keepAlive" "Sending Request to keep Alive"
       _ <- getResponse str
       threadDelay 200000000   -- Wait 200 seconds
       keepAlive str logout
     after = do
       status <- logOut logout
       if status
-        then putStrLn "Logged out successfully"
-        else putStrLn "Cannot logout"
+        then infoM "Firewall.keepAlive" "Logged out successfully"
+        else infoM "Firewall.keepAlive" "Cannot logout"
 
 usage :: IO ()
 usage   = putStrLn "Version 0.1 beta \nUsage: hwall-auth-iitk [-h] username password"
@@ -73,7 +77,7 @@ getAuthenticationInfo :: IO (String,String)
 getAuthenticationInfo = getArgs >>= parse
 
 alreadyLogged :: (String,String) -> Bool -> IO ()
-alreadyLogged auth _ =  putStrLn "Already Logged in .. Trying after 60 seconds " >> threadDelay 60000000 >> firewallAuth auth
+alreadyLogged auth _ =  warningM "Firewall.keepAlive" "Already Logged in .. Trying after 60 seconds " >> threadDelay 60000000 >> firewallAuth auth
 
 
 logOut :: String -> IO Bool
@@ -83,31 +87,26 @@ logOut url = do
 
 tryToLog :: (String,String) -> Response ByteString -> IO ()
 tryToLog (username,password) res = do
-  putStrLn $ "Hello " ++ username ++ "\nNow trying to login"
+  infoM "Firewall.login" $ "Hello " ++ username ++ "\nNow trying to login"
   let authLocation = lookup "Location" (read (show $ responseHeaders res) :: [(String,String)])
-  --print authLocation
   authRes <- getResponse (fromJust authLocation) -- Connecting to authentication Location
   let (magicString:_) = fromJust.getMagicString.unpack $ responseBody authRes
-  --print magicString
   request <- parseUrl (fromJust authLocation)
   resp <- withManager.httpLbs $ urlEncodedBody (map (pack *** pack) [("username",username),("password",password),("magic",magicString),("4Tredir","/")]) request
   let body = responseBody resp
-  --print body
   let (logout:_) = (fromJust.getLogout.unpack $ body)
-  putStrLn ("Logout url is "++logout)
-  --putStrLn $ "Logout Url" ++ (show $ responseHeaders resp)
+  infoM "Firewall.login" $ "Logout url is " ++ logout
   let keepAliveMatch = getKeepAlive $ unpack body
   case keepAliveMatch of
-    Nothing -> putStrLn "Check Username or password" >> exitFailure
+    Nothing -> emergencyM "Firewall.login" "Check Username or password" >> exitFailure
     Just (str:_) -> do
-      putStrLn ("Keep Alive URL is "++str)
+      infoM "Firewall.login" $ "Keep Alive URL is " ++ str
       keepAlive str logout
 
 firewallAuth :: (String,String) -> IO ()
 firewallAuth auth = do
-  putStrLn "Checking If already Logged in."
-  loggedin <- isLoggedIn                         -- Checking If Already Logged in
-  putStrLn "Performing operation depending on current status."
+  infoM "Firewall.keepAlive" "Checking If already Logged in."
+  loggedin <- isLoggedIn
   either (alreadyLogged auth) (tryToLog auth) loggedin
 
 
@@ -116,12 +115,14 @@ retryIfFailed action = action `catch` with
   where
     with :: HttpException -> IO ()
     with except = do
-      putStrLn $ "Exception: " ++ show except
-      putStrLn $ "Retrying in 30 seconds"
-      threadDelay 30000000   -- Wait 200 seconds
+      errorM "Firewall.keepAlive" $ "Exception: " ++ show except
+      errorM "Firewall.keepAlive" "Retrying in 30 seconds"
+      threadDelay 30000000
       retryIfFailed action
 
 main :: IO ()
 main = do
   auth <- getAuthenticationInfo   -- Getting Username and password
-  retryIfFailed (firewallAuth auth)
+  --   updateGlobalLogger "Firewall.keepAlive" (setLevel INFO)
+  updateGlobalLogger "Firewall.login" (setLevel INFO)  
+  retryIfFailed (firewallAuth auth) -- Running authentication

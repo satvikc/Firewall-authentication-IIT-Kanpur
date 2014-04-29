@@ -17,7 +17,8 @@ executable firewall-auth
   Hs-source-dirs:      src
   -- other-modules:
   -- other-extensions:
-  build-depends:       base >=4.6 && <4.9,
+  build-depends:       base,
+                       hslogger,
                        bytestring,
                        haskeline,
                        http-conduit,
