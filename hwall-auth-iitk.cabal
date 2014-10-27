@@ -18,6 +18,7 @@ executable firewall-auth
   -- other-modules:
   -- other-extensions:
   build-depends:       base,
+                       connection,
                        hslogger,
                        bytestring,
                        haskeline,
