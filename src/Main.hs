@@ -31,7 +31,7 @@ isLoggedIn = do
   return $ if responseStatus res /= status303 then Left True else Right res
 
 getMagicString :: String -> Maybe [String]
-getMagicString  = matchRegex $ mkRegex "VALUE=\"([0-9a-f]+)\""
+getMagicString  = matchRegex $ mkRegex "value=\"([0-9a-f]+)\""
 
 getKeepAlive :: String -> Maybe [String]
 getKeepAlive    = matchRegex $ mkRegex "location.href=\"(.+?)\""
