@@ -24,8 +24,8 @@ getResponse :: String -> IO (Response ByteString)
 getResponse url = do
   request' <- parseUrl url
   let request = request' {redirectCount = 0,checkStatus = \_ _ _ -> Nothing}
-  manager <- newManager $ mkManagerSettings (TLSSettingsSimple True False False) Nothing
-  httpLbs request manager
+  let settings = mkManagerSettings (TLSSettingsSimple True False False) Nothing
+  withManagerSettings settings $ httpLbs request
 
 isLoggedIn :: IO (Either Bool (Response ByteString))
 isLoggedIn = do
@@ -94,10 +94,9 @@ tryToLog (username,password) res = do
   authRes <- getResponse (fromJust authLocation) -- Connecting to authentication Location
   let (magicString:_) = fromJust.getMagicString.unpack $ responseBody authRes
   request <- parseUrl (fromJust authLocation)
-  manager <- newManager $ mkManagerSettings (TLSSettingsSimple True False False) Nothing
+  let settings = mkManagerSettings (TLSSettingsSimple True False False) Nothing
   let req = urlEncodedBody (map (pack *** pack) [("username",username),("password",password),("magic",magicString),("4Tredir","/")]) request
-  resp <- httpLbs req manager
-  closeManager manager
+  resp <- withManagerSettings settings $ httpLbs req
   let body = responseBody resp
   let (logout:_) = (fromJust.getLogout.unpack $ body)
   infoM "Firewall.login" $ "Logout url is " ++ logout
