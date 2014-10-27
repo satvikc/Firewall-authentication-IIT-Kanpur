@@ -1,29 +1,31 @@
-import           Control.Arrow
 import           Control.Applicative        (liftA2)
-import           Control.Monad.Trans        (lift)
+import           Control.Arrow
 import           Control.Concurrent         (threadDelay)
 import qualified Control.Exception          as E
-import           Data.Maybe
+import           Control.Monad.Trans        (lift)
+import           Data.ByteString.Char8      (pack)
 import           Data.ByteString.Lazy       (ByteString)
 import           Data.ByteString.Lazy.Char8 (unpack)
-import           Data.ByteString.Char8      (pack)
+import           Data.Maybe
 import           Network.HTTP.Conduit
-import           Network.HTTP.Types         (status200,status303)
+import           Network.HTTP.Types         (status200, status303)
+import           Network.Connection
 import           System.Console.Haskeline
 import           System.Environment
 import           System.Exit
-import           Text.Regex
-import           System.Log.Logger
-import           System.Log.Handler.Syslog
-import           System.Log.Handler.Simple
-import           System.Log.Handler         (setFormatter)
 import           System.Log.Formatter
+import           System.Log.Handler         (setFormatter)
+import           System.Log.Handler.Simple
+import           System.Log.Handler.Syslog
+import           System.Log.Logger
+import           Text.Regex
 
 getResponse :: String -> IO (Response ByteString)
 getResponse url = do
   request' <- parseUrl url
   let request = request' {redirectCount = 0,checkStatus = \_ _ _ -> Nothing}
-  withManager $ httpLbs request
+  manager <- newManager $ mkManagerSettings (TLSSettingsSimple True False False) Nothing
+  httpLbs request manager
 
 isLoggedIn :: IO (Either Bool (Response ByteString))
 isLoggedIn = do
@@ -92,7 +94,10 @@ tryToLog (username,password) res = do
   authRes <- getResponse (fromJust authLocation) -- Connecting to authentication Location
   let (magicString:_) = fromJust.getMagicString.unpack $ responseBody authRes
   request <- parseUrl (fromJust authLocation)
-  resp <- withManager.httpLbs $ urlEncodedBody (map (pack *** pack) [("username",username),("password",password),("magic",magicString),("4Tredir","/")]) request
+  manager <- newManager $ mkManagerSettings (TLSSettingsSimple True False False) Nothing
+  let req = urlEncodedBody (map (pack *** pack) [("username",username),("password",password),("magic",magicString),("4Tredir","/")]) request
+  resp <- httpLbs req manager
+  closeManager manager
   let body = responseBody resp
   let (logout:_) = (fromJust.getLogout.unpack $ body)
   infoM "Firewall.login" $ "Logout url is " ++ logout
@@ -124,5 +129,5 @@ main :: IO ()
 main = do
   auth <- getAuthenticationInfo   -- Getting Username and password
   --   updateGlobalLogger "Firewall.keepAlive" (setLevel INFO)
-  updateGlobalLogger "Firewall.login" (setLevel INFO)  
+  updateGlobalLogger "Firewall.login" (setLevel INFO)
   retryIfFailed (firewallAuth auth) -- Running authentication
